@@ -1,0 +1,42 @@
+version: '3'
+
+networks:
+  homelab:
+    driver: bridge
+
+volumes:
+  jenkins:
+    driver: local
+  jenkins-agent:
+    driver: local
+
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins-controller
+    restart: unless-stopped
+    networks:
+      - homelab
+    ports:
+      - "${JENKINS_UI_PORT:-8081}:8080"
+      - "${JENKIS_AGENT_PORT:-50000}:50000"
+    volumes:
+      - jenkins:/var/jenkins_home
+      - ./data/ssh-key-pair/id_rsa:/var/jenkins_home/.ssh/id_rsa:ro
+      - ./data/ssh-key-pair/id_rsa.pub:/var/jenkins_home/.ssh/id_rsa.pub:ro
+
+  jenkins-agent:
+    image: jenkins/ssh-agent
+    container_name: jenkins-agent
+    restart: unless-stopped
+    networks:
+      - homelab
+    volumes:
+      - jenkins-agent:/home/jenkins
+      - jenkins-agent:/home/jenkins/.jenkins
+      - jenkins-agent:/home/jenkins/agent
+      - jenkins-agent:/run
+      - jenkins-agent:/tmp
+      - jenkins-agent:/var/run
+    environment:
+      JENKINS_AGENT_SSH_PUBKEY: '${JENKINS_AGENT_SSH_PUBKEY}'
