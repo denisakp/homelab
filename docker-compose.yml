@@ -7,28 +7,36 @@ networks:
 volumes:
   jenkins:
     driver: local
+  jenkins-agent:
+    driver: local
 
 services:
   jenkins:
     image: jenkins/jenkins:lts
+    container_name: jenkins-controller
     restart: unless-stopped
     networks:
       - homelab
     ports:
-      - "8081:8080"
-      - "50000:50000"
+      - "${JENKINS_UI_PORT:-8081}:8080"
+      - "${JENKIS_AGENT_PORT:-50000}:50000"
     volumes:
       - jenkins:/var/jenkins_home
-      - ./data/key-pair/id_rsa:/var/jenkins_home/.ssh/id_rsa:ro
-      - ./data/key-pair/id_rsa.pub:/var/jenkins_home/.ssh/id_rsa.pub:ro
+      - ./data/ssh-key-pair/id_rsa:/var/jenkins_home/.ssh/id_rsa:ro
+      - ./data/ssh-key-pair/id_rsa.pub:/var/jenkins_home/.ssh/id_rsa.pub:ro
 
   jenkins-agent:
     image: jenkins/ssh-agent
-    container_name: agent
+    container_name: jenkins-agent
     restart: unless-stopped
     networks:
       - homelab
     volumes:
-      - ./data/key-pair/id_rsa.pub:/home/jenkins/id_rsa.pub:ro
+      - jenkins-agent:/home/jenkins
+      - jenkins-agent:/home/jenkins/.jenkins
+      - jenkins-agent:/home/jenkins/agent
+      - jenkins-agent:/run
+      - jenkins-agent:/tmp
+      - jenkins-agent:/var/run
     environment:
-      JENKINS_AGENT_SSH_PUBKEY: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDYh0X+BXST6VLqkSSonBcGg+bZXRZHWOY/tUh8FEjolXKWnY9GIWv3081rkC8D68HnysPAn8U0D98VwlLFRodSmcnRn5xVKQMsPge5hnWBC2A8yenQcPgqHJgEU9qqOJPVCSBGzD3/8TZLG0lTINJju5ksR+MxUhzv64uS73xLwo/OpqVL/AuYG/NPHujPqULSvuBnAxDw4Cv6Qxm+Nx69oI0ZChPOo0xQFgb95ffXk8T6+WOTia8UzCripKAu9rlCMJJ99yv0U/MDJ9QkVuZbwuj3jPdJG4TCWRs3ubukhXB/tXr0bW4uZmbWC73P6A1bWD4jHPYYDuxtIKpKiijPgAsQwg8pk3riurzoZbY1tTyuBmup7vGZGHg7j18tToBtU9ZbyMg9AVGgGSHTpqKSOt3X9XrEmeuza6ALseXbPdvornO6XHy2qDKQhnwobamOwndDYOMCq4m+vZBMhFZCl9mZXDY0tcqB51fQ4FSz1AVcNIxt8wP0Du1651Y8Bek= denisakp@MBP-de-Denis"
+      JENKINS_AGENT_SSH_PUBKEY: '${JENKINS_AGENT_SSH_PUBKEY}'
